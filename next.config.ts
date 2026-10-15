@@ -1,0 +1,20 @@
+import type { NextConfig } from 'next';
+
+const config: NextConfig = {
+  poweredByHeader: false,
+  devIndicators: false,
+  outputFileTracingExcludes: { '/*': ['./.env*', './.data/**/*', './.test-data/**/*', './tests/**/*'] },
+  async headers() {
+    return [{
+      source: '/:path*',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+        { key: 'Content-Security-Policy', value: "object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'" },
+      ],
+    }];
+  },
+};
+export default config;

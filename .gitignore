@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+.env*
+.env.example
+.data/
+.test-data/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.DS_Store
+.directory
+README.md
+AGENTS.md
+

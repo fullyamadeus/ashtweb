@@ -1,0 +1,186 @@
+import { test, expect, type APIRequestContext } from '@playwright/test';
+import { rm } from 'node:fs/promises';
+
+const origin = 'http://127.0.0.1:3100';
+const credentials = { username: 'editor-test', password: 'test-password-not-for-deployment' };
+const headers = { Origin: origin };
+
+async function login(request: APIRequestContext) {
+  const response = await request.post('/api/auth/login', { headers, data: credentials });
+  expect(response.ok()).toBeTruthy();
+}
+
+test.beforeAll(async () => { await rm('.test-data', { recursive: true, force: true }); });
+
+test('public routes, empty states, language switch and mobile layout', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Recent papers' })).toBeVisible();
+  await expect(page.getByText('The first page is still to come.')).toBeVisible();
+  await page.getByRole('button', { name: 'Shqip' }).click();
+  await expect(page.getByRole('heading', { name: 'Shkrimet e fundit' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'sq');
+  await page.getByRole('button', { name: 'English' }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/home-mobile.png', fullPage: true });
+  await page.getByRole('link', { name: 'Projects', exact: true }).click();
+  await expect(page.getByText('No projects yet.')).toBeVisible();
+  await page.getByRole('link', { name: 'About', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'About' })).toBeVisible();
+  await page.goto('/admin');
+  await expect(page).toHaveURL(/\/login$/);
+  expect(errors).toEqual([]);
+});
+
+test('admin writes, saves, previews, publishes and revises a paper through the UI', async ({ page, browser }) => {
+  const errors: string[] = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/login');
+  await page.getByLabel('Username', { exact: true }).fill(credentials.username);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole('button', { name: 'New project', exact: true }).click();
+  await page.getByLabel('Project name', { exact: true }).fill('Political thought');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await page.getByRole('button', { name: 'New paper', exact: true }).first().click();
+  await page.getByLabel('Paper title', { exact: true }).fill('Notes on the public sphere');
+  await page.getByLabel('Author', { exact: true }).fill('ASHT editorial team');
+  await page.getByLabel('Project', { exact: true }).selectOption({ label: 'Political thought' });
+  await page.getByLabel('Short description', { exact: true }).fill('A test paper about shared public life.');
+  const editor = page.locator('.tiptap');
+  await editor.fill('A journal creates a space for careful thought.');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect(page.locator('.save-status')).toContainText('Saved');
+  const reader = await browser.newContext();
+  const readerPage = await reader.newPage();
+  await readerPage.goto(origin);
+  await expect(readerPage.getByText('Notes on the public sphere')).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Preview', exact: true }).click();
+  await expect(page.locator('.editor-preview')).toContainText('careful thought');
+  await page.getByRole('tab', { name: 'Write', exact: true }).click();
+  await page.getByRole('button', { name: 'Publish', exact: true }).first().click();
+  await expect(page.getByRole('dialog')).toContainText('Publish this paper?');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await readerPage.reload();
+  await expect(readerPage.getByText('Notes on the public sphere')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Publish', exact: true }).first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await readerPage.reload();
+  await readerPage.getByRole('heading', { name: 'Notes on the public sphere' }).click();
+  await expect(readerPage.locator('.prose')).toContainText('careful thought');
+  await editor.fill('A private second version awaiting publication.');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect(page.locator('.save-status')).toContainText('Saved');
+  await readerPage.reload();
+  await expect(readerPage.locator('.prose')).toContainText('careful thought');
+  await expect(readerPage.locator('.prose')).not.toContainText('private second');
+  await page.getByRole('button', { name: 'Publish changes', exact: true }).first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Publish', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await readerPage.reload();
+  await expect(readerPage.locator('.prose')).toContainText('private second');
+  await page.screenshot({ path: 'test-results/editor-desktop.png', fullPage: true });
+  await readerPage.goto(`${origin}/projects`);
+  await readerPage.getByRole('button', { name: 'Political thought' }).click();
+  await readerPage.getByRole('button', { name: 'Notes on the public sphere' }).click();
+  await expect(readerPage.getByRole('heading', { name: 'Notes on the public sphere' })).toBeVisible();
+  await readerPage.screenshot({ path: 'test-results/projects-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/editor-mobile.png', fullPage: true });
+  await page.reload();
+  await page.getByRole('button', { name: 'Political thought' }).first().click();
+  await page.getByRole('button', { name: 'Notes on the public sphere', exact: true }).click();
+  await expect(page.locator('.tiptap')).toContainText('private second');
+  expect(errors).toEqual([]);
+  await reader.close();
+});
+
+test('server access control, validation, publication snapshots, concurrency and private PDFs', async ({ request, playwright }) => {
+  const anonymous = await playwright.request.newContext({ baseURL: origin });
+  expect((await anonymous.post('/api/papers', { headers, data: {} })).status()).toBe(401);
+  expect((await request.post('/api/auth/login', { headers: { Origin: 'https://foreign.example' }, data: credentials })).status()).toBe(403);
+  await login(request);
+  const creation = await request.post('/api/papers', { headers, data: {} });
+  let paper = await creation.json();
+  const publicUrl = `/papers/${paper.id}`;
+  expect((await anonymous.get(publicUrl)).status()).toBe(404);
+  expect((await request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'publish' } })).status()).toBe(400);
+  const patch = { title: 'Security test', author: 'Test author', summary: '', projectId: null, html: '<p>Public text</p><script>window.compromised=true</script>', revision: paper.revision };
+  const saved = await request.patch(`/api/papers/${paper.id}`, { headers, data: patch });
+  paper = await saved.json();
+  expect(paper.html).not.toContain('script');
+  expect((await request.patch(`/api/papers/${paper.id}`, { headers, data: patch })).status()).toBe(409);
+  expect((await request.patch(`/api/papers/${paper.id}`, { data: { ...patch, revision: paper.revision } })).status()).toBe(403);
+  const invalidUpload = await request.post(`/api/papers/${paper.id}/attachment`, { headers, multipart: { revision: String(paper.revision), file: { name: 'bad.pdf', mimeType: 'application/pdf', buffer: Buffer.from('not a PDF') } } });
+  expect(invalidUpload.status()).toBe(400);
+  const file = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF');
+  const uploaded = await request.post(`/api/papers/${paper.id}/attachment`, { headers, multipart: { revision: String(paper.revision), file: { name: 'paper.pdf', mimeType: 'application/pdf', buffer: file } } });
+  expect(uploaded.ok()).toBeTruthy(); paper = await uploaded.json();
+  expect((await anonymous.get(`/api/files/${paper.id}`)).status()).toBe(404);
+  expect((await anonymous.get(`/api/files/${paper.id}?draft=1`)).status()).toBe(404);
+  expect((await request.get(`/api/files/${paper.id}?draft=1`)).ok()).toBeTruthy();
+  const published = await request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'publish' } });
+  paper = await published.json();
+  expect((await anonymous.get(publicUrl)).ok()).toBeTruthy();
+  expect((await anonymous.get(`/api/files/${paper.id}`)).headers()['cache-control']).toBe('private, no-store');
+  const revised = await request.patch(`/api/papers/${paper.id}`, { headers, data: { ...patch, revision: paper.revision, title: 'Secret draft name', html: '<p>Secret draft text</p>', removeAttachment: true } });
+  paper = await revised.json();
+  const publicPage = await anonymous.get(publicUrl);
+  expect(await publicPage.text()).not.toContain('Secret draft');
+  expect((await anonymous.get(`/api/files/${paper.id}`)).ok()).toBeTruthy();
+  const withdrawn = await request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'unpublish' } });
+  paper = await withdrawn.json();
+  expect((await anonymous.get(publicUrl)).status()).toBe(404);
+  expect((await anonymous.get(`/api/files/${paper.id}`)).status()).toBe(404);
+  expect((await request.delete(`/api/papers/${paper.id}`, { headers, data: { revision: paper.revision } })).ok()).toBeTruthy();
+  await anonymous.dispose();
+});
+
+test('Markdown import, link editing, export and deletion confirmation', async ({ page }) => {
+  await login(page.request);
+  await page.goto('/admin');
+  await page.locator('input[type=file][accept*=".md"]').setInputFiles({ name: 'Imported essay.md', mimeType: 'text/markdown', buffer: Buffer.from('## An imported heading\n\nA paragraph with **bold text** and a [source](https://example.com).') });
+  await expect(page.getByLabel('Paper title', { exact: true })).toHaveValue('Imported essay');
+  await expect(page.locator('.tiptap h2')).toHaveText('An imported heading');
+  await expect(page.locator('.tiptap strong')).toHaveText('bold text');
+  await page.locator('.tiptap').click();
+  await page.getByRole('button', { name: 'Insert link', exact: true }).click();
+  await page.getByLabel('Link URL', { exact: true }).fill('https://asht.example');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export Markdown', exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('Imported essay.md');
+  await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+  await expect(page.locator('.save-status')).toContainText('Saved');
+  await page.getByLabel('More options: Imported essay', { exact: true }).click();
+  await page.locator('details[open]').getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByLabel('Paper title', { exact: true })).toHaveValue('Imported essay');
+  await page.getByLabel('More options: Imported essay', { exact: true }).click();
+  await page.locator('details[open]').getByRole('button', { name: 'Delete', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByText('Your next paper starts here.')).toBeVisible();
+});
+
+test('login attempts are rate limited and logout revokes the browser session', async ({ request }) => {
+  await login(request);
+  expect((await request.post('/api/auth/logout', { headers })).ok()).toBeTruthy();
+  expect((await request.post('/api/papers', { headers, data: {} })).status()).toBe(401);
+  let lastStatus = 0;
+  for (let i = 0; i < 12; i++) {
+    lastStatus = (await request.post('/api/auth/login', { headers, data: { ...credentials, password: 'incorrect' } })).status();
+    if (lastStatus === 429) break;
+    expect(lastStatus).toBe(401);
+  }
+  expect(lastStatus).toBe(429);
+});

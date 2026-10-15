@@ -6,6 +6,7 @@ import path from 'node:path';
 import type { Paper, Project, PublicPaper } from './types';
 import { publicVersion } from './types';
 import { AppError } from './errors';
+import { readStorageConfig, storageFailure } from './storage-diagnostics';
 
 type LocalData = {
   papers: Paper[];
@@ -17,9 +18,7 @@ export const isLocal = () => process.env.STORAGE_MODE === 'local' && !process.en
 const dataDir = () => path.resolve(/* turbopackIgnore: true */ process.env.ASHT_DATA_DIR || '.data');
 
 export function database() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key || process.env.STORAGE_MODE !== 'supabase') throw new AppError('storageSetup', 503);
+  const { url, key } = readStorageConfig(process.env);
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
@@ -76,7 +75,7 @@ function dbError(error: { code?: string; message?: string } | null) {
   if (!error) return;
   if (error.code === '23505') throw new AppError('duplicateProject', 409);
   if (error.code === '23503') throw new AppError('conflict', 409);
-  throw new AppError('storageSetup', 503);
+  throw storageFailure(error);
 }
 
 export async function listPapers(): Promise<Paper[]> {

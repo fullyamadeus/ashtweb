@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "check:storage": "tsx scripts/check-storage.ts",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test"
   },

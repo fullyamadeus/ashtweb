@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { AppError } from './errors';
+import { StorageError } from './storage-diagnostics';
 
 export function sameOrigin(request: NextRequest) {
   const origin = request.headers.get('origin');
@@ -17,6 +18,7 @@ export async function readJson(request: NextRequest) {
   try { return JSON.parse(body); } catch { throw new AppError('failed'); }
 }
 export function errorResponse(error: unknown) {
+  if (error instanceof StorageError) console.warn(`[ASHT storage] ${error.message}`);
   const known = error instanceof AppError;
   const status = known ? error.status : error instanceof ZodError ? 400 : 500;
   if (status === 500) console.error('Request failed:', error instanceof Error ? error.message : 'Unknown error');

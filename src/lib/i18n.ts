@@ -1,12 +1,14 @@
 import type { Language } from './types';
 
 const en = {
-  googleTranslation: 'Open translation in Google Translate',
+  addTranslation: 'Add translation', editVersion: 'Editing version', removeTranslation: 'Remove translation',
+  translationsHint: 'Write each translation’s title, description and article. All versions save as drafts and publish together.',
+  translationIncomplete: 'Each translation needs a title and article text before publishing. Complete it or remove it.',
+  translationLanguageConflict: 'This language already has a translation. Remove that translation before using it as the original language.',
+  pdfTranslationNote: 'PDF attachments remain in their original language.',
+
   originalLanguage: 'Original language', selectLanguage: 'Select language', languageRequired: 'Select the original language before publishing.',
   translateArticle: 'Read in', original: 'Original', languageUnknown: 'Not specified',
-  translating: 'Translating…', translationFailed: 'Translation is unavailable or the free daily limit was reached. Try again later.',
-  translationNote: 'Free machine translation by MyMemory. Selecting another language sends the article text to MyMemory. Daily limits apply.',
-  translatedNote: 'Machine translation may contain errors.', pdfTranslationNote: 'PDF attachments remain in their original language.',
 
   journal: '', home: 'Home', projects: 'Projects', about: 'About',
   admin: 'Admin?', contact: 'Contact', language: 'Language', skip: 'Skip to content',
@@ -74,12 +76,14 @@ const en = {
 };
 
 const sq: Record<keyof typeof en, string> = {
-  googleTranslation: 'Hap përkthimin në Google Translate',
+  addTranslation: 'Shto përkthim', editVersion: 'Versioni në redaktim', removeTranslation: 'Hiq përkthimin',
+  translationsHint: 'Shkruani titullin, përshkrimin dhe tekstin e çdo përkthimi. Të gjitha versionet ruhen si drafte dhe botohen së bashku.',
+  translationIncomplete: 'Çdo përkthim duhet të ketë titull dhe tekst përpara botimit. Plotësojeni ose hiqeni.',
+  translationLanguageConflict: 'Kjo gjuhë ka tashmë një përkthim. Hiqeni atë përpara se ta zgjidhni si gjuhë origjinale.',
+  pdfTranslationNote: 'Dokumentet PDF mbeten në gjuhën origjinale.',
+
   originalLanguage: 'Gjuha origjinale', selectLanguage: 'Zgjidhni gjuhën', languageRequired: 'Zgjidhni gjuhën origjinale përpara botimit.',
   translateArticle: 'Lexo në', original: 'Origjinali', languageUnknown: 'E papërcaktuar',
-  translating: 'Duke përkthyer…', translationFailed: 'Përkthimi nuk është i disponueshëm ose është arritur kufiri ditor falas. Provoni më vonë.',
-  translationNote: 'Përkthim automatik falas nga MyMemory. Zgjedhja e një gjuhe tjetër dërgon tekstin te MyMemory. Ka kufij ditorë.',
-  translatedNote: 'Përkthimi automatik mund të përmbajë gabime.', pdfTranslationNote: 'Dokumentet PDF mbeten në gjuhën origjinale.',
 
   journal: '', home: 'Kryefaqja', projects: 'Projektet', about: 'Rreth nesh',
   admin: 'Administrator?', contact: 'Kontakt', language: 'Gjuha', skip: 'Kalo te përmbajtja',

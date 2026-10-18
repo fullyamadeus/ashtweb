@@ -16,7 +16,11 @@ export type Project = {
   createdAt: string;
 };
 
+export type ArticleTranslation = { title: string; summary: string; html: string };
+export type ArticleTranslations = Partial<Record<ArticleLanguage, ArticleTranslation>>;
+
 export type PaperContent = {
+  translations?: ArticleTranslations;
   originalLanguage?: ArticleLanguage | null;
   title: string;
   author: string;
@@ -40,8 +44,9 @@ export type PublicPaper = Publication & { id: string };
 
 export function hasUnpublishedChanges(paper: Paper) {
   if (!paper.published) return true;
+  if (JSON.stringify(paper.translations || {}) !== JSON.stringify(paper.published.translations || {})) return true;
   return (['originalLanguage', 'title', 'author', 'summary', 'html', 'projectId', 'attachment'] as const)
-    .some(key => JSON.stringify(paper[key]) !== JSON.stringify(paper.published![key]));
+    .some(key => JSON.stringify(paper[key] ?? null) !== JSON.stringify(paper.published![key] ?? null));
 }
 
 export function publicVersion(paper: Paper): PublicPaper | null {

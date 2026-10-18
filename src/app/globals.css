@@ -348,3 +348,8 @@ input.document-title::placeholder{color:#b5aea5}
 .article-translation select{max-width:100%;padding:8px;border:1px solid var(--line);background:var(--paper,#fff);color:var(--ink);font:inherit}
 .article-translation p{flex-basis:100%;margin:0;line-height:1.6}
 .article-translation p:empty{display:none}
+
+.translation-editor-controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;margin:0 0 24px;padding:16px 0;border-block:1px solid var(--line)}
+.translation-editor-controls label{font-family:var(--sans);font-size:11px;gap:7px}
+.translation-editor-controls select{font:inherit;padding:8px;max-width:100%;background:#fff;color:var(--ink);border:1px solid var(--line)}
+.translation-editor-controls p{flex-basis:100%;margin:0;line-height:1.6}

@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth';
 import { getPaper, pruneAttachments, replacePaper } from '@/lib/storage';
 import { errorResponse, readJson, sameOrigin } from '@/lib/http';
 import { AppError } from '@/lib/errors';
+import { publicationTranslations } from '@/lib/translation';
 import { cleanHtml, plainText } from '@/lib/content';
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -20,7 +21,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       if (!paper.originalLanguage) throw new AppError('languageRequired');
       const html = cleanHtml(paper.html);
       if (!plainText(html) && !paper.attachment) throw new AppError('contentRequired');
+      const translations = publicationTranslations(paper.translations, paper.originalLanguage);
       published = {
+        translations,
         originalLanguage: paper.originalLanguage, title: paper.title, author: paper.author, summary: paper.summary, html,
         projectId: paper.projectId, attachment: paper.attachment, publishedAt: new Date().toISOString(),
       };

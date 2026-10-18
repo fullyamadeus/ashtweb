@@ -28,6 +28,9 @@ create table if not exists public.papers (
 alter table public.papers add column if not exists original_language text
   check (original_language in ('sq', 'mk', 'en'));
 
+alter table public.papers add column if not exists translations jsonb not null default '{}'::jsonb
+  check (jsonb_typeof(translations) = 'object');
+
 create index if not exists papers_project on public.papers(project_id);
 create index if not exists papers_updated on public.papers(updated_at desc);
 

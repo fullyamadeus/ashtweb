@@ -57,6 +57,7 @@ type Row = Record<string, unknown>;
 function fromRow(row: Row): Paper {
   return {
     id: row.id as string, title: row.title as string, author: row.author as string,
+    translations: (row.translations as Paper['translations']) || {},
     originalLanguage: (row.original_language as Paper['originalLanguage']) ?? null,
     summary: row.summary as string, html: row.content_html as string,
     projectId: row.project_id as string | null, attachment: row.attachment as Paper['attachment'],
@@ -67,6 +68,7 @@ function fromRow(row: Row): Paper {
 function toRow(paper: Paper) {
   return {
     id: paper.id, title: paper.title, author: paper.author, summary: paper.summary,
+    translations: paper.translations || {},
     original_language: paper.originalLanguage ?? null,
     content_html: paper.html, project_id: paper.projectId, attachment: paper.attachment,
     revision: paper.revision, created_at: paper.createdAt, updated_at: paper.updatedAt,

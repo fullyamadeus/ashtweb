@@ -1,6 +1,13 @@
 import type { Language } from './types';
 
 const en = {
+  googleTranslation: 'Open translation in Google Translate',
+  originalLanguage: 'Original language', selectLanguage: 'Select language', languageRequired: 'Select the original language before publishing.',
+  translateArticle: 'Read in', original: 'Original', languageUnknown: 'Not specified',
+  translating: 'Translating…', translationFailed: 'Translation is unavailable or the free daily limit was reached. Try again later.',
+  translationNote: 'Free machine translation by MyMemory. Selecting another language sends the article text to MyMemory. Daily limits apply.',
+  translatedNote: 'Machine translation may contain errors.', pdfTranslationNote: 'PDF attachments remain in their original language.',
+
   journal: '', home: 'Home', projects: 'Projects', about: 'About',
   admin: 'Admin?', contact: 'Contact', language: 'Language', skip: 'Skip to content',
   recent: 'Recent papers', publications: 'Publications', publishedPapers: 'Published papers',
@@ -67,6 +74,13 @@ const en = {
 };
 
 const sq: Record<keyof typeof en, string> = {
+  googleTranslation: 'Hap përkthimin në Google Translate',
+  originalLanguage: 'Gjuha origjinale', selectLanguage: 'Zgjidhni gjuhën', languageRequired: 'Zgjidhni gjuhën origjinale përpara botimit.',
+  translateArticle: 'Lexo në', original: 'Origjinali', languageUnknown: 'E papërcaktuar',
+  translating: 'Duke përkthyer…', translationFailed: 'Përkthimi nuk është i disponueshëm ose është arritur kufiri ditor falas. Provoni më vonë.',
+  translationNote: 'Përkthim automatik falas nga MyMemory. Zgjedhja e një gjuhe tjetër dërgon tekstin te MyMemory. Ka kufij ditorë.',
+  translatedNote: 'Përkthimi automatik mund të përmbajë gabime.', pdfTranslationNote: 'Dokumentet PDF mbeten në gjuhën origjinale.',
+
   journal: '', home: 'Kryefaqja', projects: 'Projektet', about: 'Rreth nesh',
   admin: 'Administrator?', contact: 'Kontakt', language: 'Gjuha', skip: 'Kalo te përmbajtja',
   recent: 'Shkrimet e fundit', publications: 'Botime', publishedPapers: 'Shkrime të botuara',

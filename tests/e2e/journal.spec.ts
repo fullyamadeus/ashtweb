@@ -61,6 +61,7 @@ test('admin writes, saves, previews, publishes and revises a paper through the U
   await page.getByRole('button', { name: 'New paper', exact: true }).first().click();
   await page.getByLabel('Paper title', { exact: true }).fill('Notes on the public sphere');
   await page.getByLabel('Author', { exact: true }).fill('ASHT editorial team');
+  await page.getByLabel('Original language', { exact: true }).selectOption('en');
   await page.getByLabel('Project', { exact: true }).selectOption({ label: 'Political thought' });
   await page.getByLabel('Short description', { exact: true }).fill('A test paper about shared public life.');
   const editor = page.locator('.tiptap');
@@ -123,7 +124,7 @@ test('server access control, validation, publication snapshots, concurrency and 
   const publicUrl = `/papers/${paper.id}`;
   expect((await anonymous.get(publicUrl)).status()).toBe(404);
   expect((await request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'publish' } })).status()).toBe(400);
-  const patch = { title: 'Security test', author: 'Test author', summary: '', projectId: null, html: '<p>Public text</p><script>window.compromised=true</script>', revision: paper.revision };
+  const patch = { originalLanguage: 'en', title: 'Security test', author: 'Test author', summary: '', projectId: null, html: '<p>Public text</p><script>window.compromised=true</script>', revision: paper.revision };
   const saved = await request.patch(`/api/papers/${paper.id}`, { headers, data: patch });
   paper = await saved.json();
   expect(paper.html).not.toContain('script');
@@ -181,6 +182,49 @@ test('Markdown import, link editing, export and deletion confirmation', async ({
   await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   await expect(page.getByText('Your next paper starts here.')).toBeVisible();
+});
+
+test('translation preserves formatting, restores the original and handles quota errors', async ({ page }) => {
+  await login(page.request);
+  let paper = await (await page.request.post('/api/papers', { headers, data: {} })).json();
+  const content = { title: 'Hello world', author: 'Author', summary: 'A summary', html: '<h2>Hello</h2><p>A <strong>bold</strong> idea <a href="https://example.com">source</a></p><pre><code>const x = 1;</code></pre>', projectId: null };
+  paper = await (await page.request.patch(`/api/papers/${paper.id}`, { headers, data: { ...content, revision: paper.revision } })).json();
+  const missing = await page.request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'publish' } });
+  expect((await missing.json()).error).toBe('languageRequired');
+  expect((await page.request.patch(`/api/papers/${paper.id}`, { headers, data: { ...content, revision: paper.revision, originalLanguage: 'fr' } })).status()).toBe(400);
+  paper = await (await page.request.patch(`/api/papers/${paper.id}`, { headers, data: { ...content, revision: paper.revision, originalLanguage: 'en' } })).json();
+  paper = await (await page.request.post(`/api/papers/${paper.id}/publish`, { headers, data: { revision: paper.revision, action: 'publish' } })).json();
+  expect(paper.published.originalLanguage).toBe('en');
+  let requests = 0;
+  await page.route('https://api.mymemory.translated.net/get?**', async route => {
+    requests++;
+    const url = new URL(route.request().url());
+    const target = url.searchParams.get('langpair')?.split('|')[1];
+    await route.fulfill({ json: target === 'mk' ? { responseStatus: 403, quotaFinished: true } : { responseStatus: 200, responseData: { translatedText: `SQ ${url.searchParams.get('q')}` } } });
+  });
+  await page.goto(`/papers/${paper.id}`);
+  const select = page.getByLabel('Read in', { exact: true });
+  await expect(select).toHaveValue('en');
+  await select.selectOption('sq');
+  await expect(page.locator('.prose')).toHaveAttribute('lang', 'sq');
+  await expect(page.locator('.prose strong')).toHaveText('SQ bold');
+  await expect(page.locator('.prose a')).toHaveAttribute('href', 'https://example.com');
+  await expect(page.locator('.prose code')).toHaveText('const x = 1;');
+  const count = requests;
+  await select.selectOption('en');
+  await expect(page.locator('.prose strong')).toHaveText('bold');
+  await select.selectOption('sq');
+  await expect(page.locator('.prose strong')).toHaveText('SQ bold');
+  expect(requests).toBe(count);
+  await select.selectOption('mk');
+  await expect(page.locator('.article-translation').getByRole('alert')).toContainText('free daily limit');
+  await expect(select).toHaveValue('sq');
+  await expect(page.getByRole('link', { name: 'Open translation in Google Translate' })).toHaveAttribute('href', /sl=en&tl=mk&u=/);
+  await select.selectOption('en');
+  await expect(page.locator('.prose')).toHaveAttribute('lang', 'en');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/translation-mobile.png', fullPage: true });
 });
 
 test('login attempts are rate limited and logout revokes the browser session', async ({ request }) => {

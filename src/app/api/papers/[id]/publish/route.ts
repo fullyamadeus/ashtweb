@@ -17,10 +17,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     let published = null;
     if (action === 'publish') {
       if (!paper.title.trim() || !paper.author.trim()) throw new AppError('requiredPublish');
+      if (!paper.originalLanguage) throw new AppError('languageRequired');
       const html = cleanHtml(paper.html);
       if (!plainText(html) && !paper.attachment) throw new AppError('contentRequired');
       published = {
-        title: paper.title, author: paper.author, summary: paper.summary, html,
+        originalLanguage: paper.originalLanguage, title: paper.title, author: paper.author, summary: paper.summary, html,
         projectId: paper.projectId, attachment: paper.attachment, publishedAt: new Date().toISOString(),
       };
     }

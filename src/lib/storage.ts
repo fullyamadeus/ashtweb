@@ -57,6 +57,7 @@ type Row = Record<string, unknown>;
 function fromRow(row: Row): Paper {
   return {
     id: row.id as string, title: row.title as string, author: row.author as string,
+    originalLanguage: (row.original_language as Paper['originalLanguage']) ?? null,
     summary: row.summary as string, html: row.content_html as string,
     projectId: row.project_id as string | null, attachment: row.attachment as Paper['attachment'],
     revision: row.revision as number, createdAt: row.created_at as string,
@@ -66,6 +67,7 @@ function fromRow(row: Row): Paper {
 function toRow(paper: Paper) {
   return {
     id: paper.id, title: paper.title, author: paper.author, summary: paper.summary,
+    original_language: paper.originalLanguage ?? null,
     content_html: paper.html, project_id: paper.projectId, attachment: paper.attachment,
     revision: paper.revision, created_at: paper.createdAt, updated_at: paper.updatedAt,
     published_snapshot: paper.published,
@@ -109,7 +111,7 @@ export async function getPublicPaper(id: string): Promise<PublicPaper | null> {
 export async function createPaper(projectId: string | null): Promise<Paper> {
   const now = new Date().toISOString();
   const paper: Paper = {
-    id: randomUUID(), title: '', author: '', summary: '', html: '', projectId,
+    id: randomUUID(), originalLanguage: null, title: '', author: '', summary: '', html: '', projectId,
     attachment: null, revision: 1, createdAt: now, updatedAt: now, published: null,
   };
   if (isLocal()) return localWrite(data => {

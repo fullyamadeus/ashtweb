@@ -24,6 +24,10 @@ create table if not exists public.papers (
     coalesce(length(trim(published_snapshot->>'author')), 0) > 0
   ))
 );
+-- Existing articles remain unspecified until an editor sets their language.
+alter table public.papers add column if not exists original_language text
+  check (original_language in ('sq', 'mk', 'en'));
+
 create index if not exists papers_project on public.papers(project_id);
 create index if not exists papers_updated on public.papers(updated_at desc);
 

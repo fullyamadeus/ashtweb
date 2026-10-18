@@ -1,3 +1,6 @@
+export const articleLanguages = { sq: 'Shqip', mk: 'Македонски', en: 'English' } as const;
+export type ArticleLanguage = keyof typeof articleLanguages;
+
 export type Language = 'en' | 'sq';
 
 export type Attachment = {
@@ -14,6 +17,7 @@ export type Project = {
 };
 
 export type PaperContent = {
+  originalLanguage?: ArticleLanguage | null;
   title: string;
   author: string;
   summary: string;
@@ -36,7 +40,7 @@ export type PublicPaper = Publication & { id: string };
 
 export function hasUnpublishedChanges(paper: Paper) {
   if (!paper.published) return true;
-  return (['title', 'author', 'summary', 'html', 'projectId', 'attachment'] as const)
+  return (['originalLanguage', 'title', 'author', 'summary', 'html', 'projectId', 'attachment'] as const)
     .some(key => JSON.stringify(paper[key]) !== JSON.stringify(paper.published![key]));
 }
 

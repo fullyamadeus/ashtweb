@@ -13,6 +13,7 @@ export async function PATCH(request: NextRequest, context: Context) {
     sameOrigin(request); await requireAdmin();
     const id = z.uuid().parse((await context.params).id);
     const input = z.object({
+      originalLanguage: z.enum(['sq', 'mk', 'en']).nullable().optional(),
       title: z.string().trim().max(240), author: z.string().trim().max(160),
       summary: z.string().trim().max(600), html: z.string().max(1_500_000),
       projectId: z.uuid().nullable(), revision: revisionSchema,

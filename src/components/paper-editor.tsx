@@ -4,7 +4,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { Check, Circle, Download, Eye, FileText, Paperclip, Save, Upload, X } from 'lucide-react';
 import TurndownService from 'turndown';
 import type { Paper, Project } from '@/lib/types';
-import { hasUnpublishedChanges } from '@/lib/types';
+import { articleLanguages, type ArticleLanguage, hasUnpublishedChanges } from '@/lib/types';
 import { api, errorKey, RequestError } from '@/lib/client-api';
 import { plainText } from '@/lib/content';
 import type { MessageKey } from '@/lib/i18n';
@@ -53,7 +53,7 @@ export const PaperEditor = forwardRef<EditorHandle, Props>(function PaperEditor(
     setStatus('saving'); setError(null);
     const request = api<Paper>(`/api/papers/${paper.id}`, {
       method: 'PATCH', body: JSON.stringify({ title: snapshot.title, author: snapshot.author,
-        summary: snapshot.summary, html: snapshot.html, projectId: snapshot.projectId,
+        originalLanguage: snapshot.originalLanguage ?? null, summary: snapshot.summary, html: snapshot.html, projectId: snapshot.projectId,
         revision: persisted.current.revision, removeAttachment: persisted.current.attachment !== null && snapshot.attachment === null }),
     }).then(saved => {
       persisted.current = saved;
@@ -119,6 +119,7 @@ export const PaperEditor = forwardRef<EditorHandle, Props>(function PaperEditor(
         <div className="document-status-row"><span className={`status-label ${working.published ? 'is-published' : ''}`}><span/>{working.published ? changed ? t.newChanges : t.published : t.draft}</span><span className="small-text muted">{t.privateNote}</span></div>
         <input className="document-title" aria-label={t.title} placeholder={t.titlePlaceholder} value={working.title} maxLength={240} onChange={e => update({ title: e.target.value })}/>
         <div className="document-fields"><label>{t.author}<input value={working.author} placeholder={t.authorPlaceholder} aria-label={t.author} maxLength={160} onChange={e => update({ author: e.target.value })}/></label>
+          <label>{t.originalLanguage}<select aria-label={t.originalLanguage} value={working.originalLanguage || ''} onChange={e => update({ originalLanguage: (e.target.value || null) as ArticleLanguage | null })}><option value="">{t.selectLanguage}</option>{Object.entries(articleLanguages).map(([code, name]) => <option key={code} value={code}>{name}</option>)}</select></label>
           <label>{t.project}<select aria-label={t.project} value={working.projectId || ''} onChange={e => update({ projectId: e.target.value || null })}><option value="">{t.noProject}</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label></div>
         <label className="summary-field">{t.summary}<textarea value={working.summary} placeholder={t.summaryPlaceholder} rows={2} maxLength={600} onChange={e => update({ summary: e.target.value })}/></label>
         <div className="editor-mode-bar"><div className="editor-tabs" role="tablist"><button role="tab" aria-selected={mode === 'write'} onClick={() => setMode('write')}><FileText size={13}/>{t.editor}</button><button role="tab" aria-selected={mode === 'preview'} onClick={() => setMode('preview')}><Eye size={14}/>{t.preview}</button></div>
